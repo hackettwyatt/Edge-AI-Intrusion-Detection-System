@@ -1,0 +1,57 @@
+# Local Python environments and caches
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Secrets, credentials, local overrides
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.kubeconfig
+kubeconfig
+secrets/
+credentials/
+
+# Generated model binaries and large arrays
+*.joblib
+*.pkl
+*.pickle
+*.onnx
+*.tflite
+*.npy
+*.npz
+*.parquet
+
+# Network captures, local datasets, and large raw artifacts
+*.pcap
+*.pcapng
+*.cap
+*.log
+*.pid
+data/
+datasets/
+raw_data/
+captures/
+results/raw/
+results/trials/
+simple_ids/reports/
+
+# Local development/editor state
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# Preserve curated aggregate result .txt and .csv files in results/.
