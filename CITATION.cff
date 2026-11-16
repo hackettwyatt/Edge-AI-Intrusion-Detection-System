@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: >-
+  If you use or discuss this research software, cite the repository
+  version associated with the master's project.
+title: AI-Assisted Intrusion Detection and Automated Response on Low-Cost Edge Hardware
+type: software
+authors:
+  - family-names: Hackett
+    given-names: Wyatt
+keywords:
+  - intrusion detection
+  - edge computing
+  - machine learning
+  - Zeek
+  - nftables
+  - Kubernetes
