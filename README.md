@@ -36,7 +36,7 @@ The live pipeline forms **10-second, source-based traffic windows** with **16 be
 | [`live_ids/`](live_ids/) | Live V4 controller, inference service, and service metrics |
 | [`defense/`](defense/) | Alert/response policy and firewall enforcement |
 | [`evaluation/`](evaluation/) | Controlled experiment orchestration and result summarization |
-| [`results/`](results/) | Aggregate results from the final evaluation campaigns |
+
 
 The source files were organized into these directories for publication. A few Python imports and startup settings were adjusted to match the publication layout; the classifier, feature and response algorithms were otherwise preserved. This is a **research code snapshot**, not a guaranteed turnkey or production-ready network defense product.
 
