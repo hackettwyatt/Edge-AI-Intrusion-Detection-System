@@ -1,16 +1,17 @@
+"""Prepare the UNSW-NB15 training input consumed by the final V4 trainer.
+
+The output filename is retained for compatibility with the frozen V4 training
+script. UWF datasets are not needed to build or train the final V4 model.
+"""
+
+import os
 from pathlib import Path
 
 import pandas as pd
 
 
-BASE = Path.home() / "ai-ids"
-
-UWF = (
-    BASE
-    / "simple_ids"
-    / "data"
-    / "v4_windows"
-    / "uwf_binary_windows_10s_all.csv"
+BASE = Path(
+    os.environ.get("AI_IDS_PROJECT_ROOT") or str(Path.home() / "ai-ids")
 )
 
 UNSW = (
@@ -51,21 +52,14 @@ FEATURES = [
 
 
 def main():
-
-    uwf = pd.read_csv(UWF)
-    unsw = pd.read_csv(UNSW)
+    unsw = pd.read_csv(UNSW, low_memory=False)
 
     print("=" * 70)
-    print("INPUT DATASETS")
+    print("FINAL V4 EXTERNAL TRAINING SOURCE")
     print("=" * 70)
 
     print(
-        "UWF:",
-        f"{len(uwf):,}"
-    )
-
-    print(
-        "UNSW:",
+        "UNSW-NB15:",
         f"{len(unsw):,}"
     )
 
@@ -79,73 +73,38 @@ def main():
         ]
     )
 
-    for name, df in [
-        ("UWF", uwf),
-        ("UNSW", unsw),
-    ]:
+    missing = [column for column in required if column not in unsw.columns]
+    if missing:
+        raise RuntimeError(f"UNSW-NB15 missing columns: {missing}")
 
-        missing = [
-            col
-            for col in required
-            if col not in df.columns
-        ]
+    if not unsw["dataset"].eq("UNSW-NB15").all():
+        raise RuntimeError("Expected only UNSW-NB15 rows in the input CSV.")
 
-        if missing:
-            raise RuntimeError(
-                f"{name} missing columns: "
-                f"{missing}"
-            )
+    # Keep the original column ordering and row ordering from the old combiner.
+    # The V4 trainer already filtered the old combined CSV to these rows.
+    training_input = unsw[required].copy()
 
-    uwf_out = uwf[
-        required
-    ].copy()
-
-    unsw_out = unsw[
-        required
-    ].copy()
-
-    combined = pd.concat(
-        [
-            uwf_out,
-            unsw_out,
-        ],
-        ignore_index=True,
-    )
-
-    combined.to_csv(
-        OUT,
-        index=False,
-    )
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    training_input.to_csv(OUT, index=False)
 
     print()
     print("=" * 70)
-    print("COMBINED V4 DATASET")
+    print("V4 TRAINING INPUT (UNSW-NB15 ONLY)")
     print("=" * 70)
 
     print(
         "Rows:",
-        f"{len(combined):,}"
+        f"{len(training_input):,}"
     )
 
     print()
     print("Labels:")
     print(
-        combined[
+        training_input[
             "label_binary"
         ]
         .value_counts()
         .sort_index()
-    )
-
-    print()
-    print("By dataset:")
-    print(
-        pd.crosstab(
-            combined["dataset"],
-            combined[
-                "label_binary"
-            ],
-        )
     )
 
     print()
