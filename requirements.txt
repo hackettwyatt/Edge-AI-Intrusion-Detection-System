@@ -1,7 +1,5 @@
-# Recovered Athena V4 runtime versions, Nov 2026.
 numpy==2.4.4
 pandas==3.0.3
 scikit-learn==1.9.0
 joblib==1.5.3
-# Required by the V4 inference/metrics server.
 prometheus-client
