@@ -1,4 +1,6 @@
+import os
 from pathlib import Path
+import re
 
 import joblib
 import pandas as pd
@@ -10,16 +12,117 @@ from sklearn.metrics import (
     average_precision_score,
     roc_auc_score,
 )
+from sklearn.model_selection import GroupShuffleSplit
 from sklearn.utils.class_weight import compute_sample_weight
 
-from model_pipeline.train_final_candidate_v2 import (
-    BASE,
-    FEATURES,
-    RANDOM_STATE,
-    THRESHOLD,
-    prepare_data,
-    grouped_split,
+
+BASE = Path(
+    os.environ.get("AI_IDS_PROJECT_ROOT") or str(Path.home() / "ai-ids")
 )
+
+COMBINED = (
+    BASE
+    / "simple_ids"
+    / "data"
+    / "v4_windows"
+    / "combined_v4_binary_windows_10s.csv"
+)
+
+LOCAL = (
+    BASE
+    / "simple_ids"
+    / "data"
+    / "v4_windows"
+    / "local"
+    / "local_v4_binary_windows_10s.csv"
+)
+
+FEATURES = [
+    "connection_count",
+    "connections_per_second",
+    "unique_destination_ips",
+    "unique_destination_ports",
+    "destination_ip_entropy",
+    "destination_port_entropy",
+    "tcp_count",
+    "udp_count",
+    "icmp_count",
+    "no_response_ratio",
+    "total_orig_pkts",
+    "total_resp_pkts",
+    "total_orig_bytes",
+    "total_resp_bytes",
+    "mean_duration",
+    "median_duration",
+]
+
+RANDOM_STATE = 42
+THRESHOLD = 0.50
+
+
+def local_group(row):
+    source_file = str(row.get("source_file", ""))
+
+    # Keep edge and central views of the same experiment run together.
+    match = re.search(
+        r"(benign_http|slowsyn20|syn200|syn20|udp50)_r(\d+)",
+        source_file,
+    )
+
+    if match:
+        return (
+            f"LOCAL_CAMPAIGN::"
+            f"{match.group(1)}_r{match.group(2)}"
+        )
+
+    return f"LOCAL_RAW::{source_file}"
+
+
+def prepare_data():
+    external = pd.read_csv(COMBINED, low_memory=False)
+
+    # Original candidate trains on UNSW-NB15 windows only.
+    unsw = external[
+        external["dataset"] == "UNSW-NB15"
+    ].copy()
+
+    unsw["source_file"] = ""
+    unsw["workload"] = ""
+
+    unsw["split_group"] = (
+        "UNSW::"
+        + (
+            pd.to_numeric(
+                unsw["window_start"],
+                errors="coerce",
+            )
+            // 3600
+        )
+        .astype("Int64")
+        .astype(str)
+    )
+
+    local = pd.read_csv(LOCAL, low_memory=False)
+    local["split_group"] = local.apply(local_group, axis=1)
+
+    return unsw, local
+
+
+def grouped_split(part):
+    splitter = GroupShuffleSplit(
+        n_splits=1,
+        test_size=0.20,
+        random_state=RANDOM_STATE,
+    )
+
+    train_idx, val_idx = next(
+        splitter.split(part, groups=part["split_group"])
+    )
+
+    return (
+        part.iloc[train_idx].copy(),
+        part.iloc[val_idx].copy(),
+    )
 
 
 V3_EXPANSION = (
